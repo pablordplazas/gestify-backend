@@ -1,12 +1,13 @@
 package com.gestify.backend.controller;
 
+import com.gestify.backend.dto.request.ProductRequest;
 import com.gestify.backend.dto.response.ProductResponse;
 import com.gestify.backend.service.ProductService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+
 import java.util.List;
 
 @RestController
@@ -21,28 +22,17 @@ public class ProductController {
         return ResponseEntity.ok(productService.getAllByBusiness(idNegocio));
     }
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ProductResponse> createProduct(
-            @RequestParam("id_negocio") Long idNegocio,
-            @RequestParam("name") String name,
-            @RequestParam("category") String category,
-            @RequestParam("price") Double price,
-            @RequestParam("stock") Integer stock,
-            @RequestPart(value = "image", required = false) MultipartFile image
-    ) {
-        return ResponseEntity.ok(productService.createProduct(idNegocio, name, category, price, stock, image));
+    @PostMapping
+    public ResponseEntity<ProductResponse> createProduct(@Valid @RequestBody ProductRequest request) {
+        return ResponseEntity.ok(productService.createProduct(request));
     }
 
-    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping("/{id}")
     public ResponseEntity<ProductResponse> updateProduct(
             @PathVariable Long id,
-            @RequestParam("name") String name,
-            @RequestParam("category") String category,
-            @RequestParam("price") Double price,
-            @RequestParam("stock") Integer stock,
-            @RequestPart(value = "image", required = false) MultipartFile image
+            @Valid @RequestBody ProductRequest request
     ) {
-        return ResponseEntity.ok(productService.updateProduct(id, name, category, price, stock, image));
+        return ResponseEntity.ok(productService.updateProduct(id, request));
     }
 
     @PatchMapping("/{id}/toggle")
