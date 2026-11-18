@@ -6,12 +6,16 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
 import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class JwtService {
+
+    private static final String BUSINESS_CLAIM = "id_negocio";
 
     @Value("${jwt.secret}")
     private String secretKey;
@@ -21,7 +25,7 @@ public class JwtService {
 
     public String generateToken(Long businessId, String email) {
         return Jwts.builder()
-                .claims(Map.of("id_negocio", businessId))
+                .claims(Map.of(BUSINESS_CLAIM, businessId))
                 .subject(email)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
@@ -29,24 +33,23 @@ public class JwtService {
                 .compact();
     }
 
-    public String extractEmail(String token) {
-        return extractAllClaims(token).getSubject();
-    }
-
-    public boolean isTokenValid(String token) {
+    /** Devuelve el usuario del token, o vacío si el token es inválido, está vencido o no trae negocio. */
+    public Optional<AuthUser> parseAuthUser(String token) {
         try {
-            return !extractAllClaims(token).getExpiration().before(new Date());
-        } catch (Exception e) {
-            return false;
-        }
-    }
+            Claims claims = Jwts.parser()
+                    .verifyWith(getSignInKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
 
-    private Claims extractAllClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(getSignInKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+            Object businessId = claims.get(BUSINESS_CLAIM);
+            if (!(businessId instanceof Number number)) {
+                return Optional.empty();
+            }
+            return Optional.of(new AuthUser(number.longValue(), claims.getSubject()));
+        } catch (Exception e) {
+            return Optional.empty();
+        }
     }
 
     private SecretKey getSignInKey() {

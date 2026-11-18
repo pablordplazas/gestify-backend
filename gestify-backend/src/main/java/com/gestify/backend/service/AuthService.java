@@ -21,15 +21,17 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (businessRepository.existsByEmail(request.getEmail().trim().toLowerCase())) {
+        String email = request.getEmail().trim().toLowerCase();
+
+        if (businessRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("El correo ya está registrado en Gestify.");
         }
 
         Business business = Business.builder()
                 .businessName(request.getBusinessName().trim())
-                .email(request.getEmail().trim().toLowerCase())
+                .email(email)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
-                .themeColor("AZUL")
+                .themeColor(BusinessService.DEFAULT_THEME)
                 .isDarkMode(false)
                 .build();
 
@@ -39,6 +41,7 @@ public class AuthService {
         return buildAuthResponse(saved, token);
     }
 
+    @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest request) {
         Business business = businessRepository.findByEmail(request.getEmail().trim().toLowerCase())
                 .orElseThrow(() -> new IllegalArgumentException("Credenciales inválidas."));
@@ -57,7 +60,7 @@ public class AuthService {
                 .idNegocio(b.getId())
                 .businessName(b.getBusinessName())
                 .email(b.getEmail())
-                .themeColor(b.getThemeColor())
+                .themeColor(BusinessService.normalizeTheme(b.getThemeColor()))
                 .isDarkMode(b.getIsDarkMode())
                 .build();
     }

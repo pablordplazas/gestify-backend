@@ -1,15 +1,19 @@
 package com.gestify.backend.dto.request;
 
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
 public class RegisterRequest {
+
     @NotBlank(message = "El nombre del negocio es obligatorio")
+    @Size(max = 80, message = "El nombre del negocio no puede superar 80 caracteres")
     private String businessName;
 
     @NotBlank(message = "El correo es obligatorio")
-    @Email(regexp = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$", message = "Formato de correo inválido")
+    @Email(message = "Formato de correo inválido")
     private String email;
 
     @NotBlank(message = "La contraseña es obligatoria")

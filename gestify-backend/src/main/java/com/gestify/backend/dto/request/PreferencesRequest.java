@@ -6,9 +6,10 @@ import lombok.Data;
 
 @Data
 public class PreferencesRequest {
-    @NotBlank
+
+    @NotBlank(message = "El color de tema es obligatorio")
     private String themeColor;
 
-    @NotNull
+    @NotNull(message = "El modo oscuro es obligatorio")
     private Boolean isDarkMode;
 }

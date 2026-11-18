@@ -2,15 +2,16 @@ package com.gestify.backend.service;
 
 import com.gestify.backend.dto.request.ProductRequest;
 import com.gestify.backend.dto.response.ProductResponse;
+import com.gestify.backend.exception.ResourceNotFoundException;
 import com.gestify.backend.model.Business;
 import com.gestify.backend.model.Product;
 import com.gestify.backend.repository.BusinessRepository;
 import com.gestify.backend.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -19,63 +20,58 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final BusinessRepository businessRepository;
 
-    public List<ProductResponse> getAllByBusiness(Long idNegocio) {
-        return productRepository.findByBusinessIdOrderByIdDesc(idNegocio)
+    @Transactional(readOnly = true)
+    public List<ProductResponse> getAllByBusiness(Long businessId) {
+        return productRepository.findByBusinessIdOrderByIdDesc(businessId)
                 .stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+                .map(ProductResponse::fromEntity)
+                .toList();
     }
 
-    public ProductResponse createProduct(ProductRequest request) {
-        Business business = businessRepository.findById(request.getIdNegocio())
-                .orElseThrow(() -> new RuntimeException("Negocio no encontrado con id: " + request.getIdNegocio()));
+    @Transactional
+    public ProductResponse createProduct(Long businessId, ProductRequest request) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado."));
 
-        Product product = new Product();
-        product.setBusiness(business);
-        product.setName(request.getName());
-        product.setCategory(request.getCategory());
+        Product product = Product.builder()
+                .business(business)
+                .name(request.getName().trim())
+                .category(request.getCategory().trim())
+                .price(request.getPrice())
+                .stock(request.getStock())
+                .imageUri(trimOrNull(request.getImageUri()))
+                .isActive(true)
+                .build();
+
+        return ProductResponse.fromEntity(productRepository.save(product));
+    }
+
+    @Transactional
+    public ProductResponse updateProduct(Long businessId, Long id, ProductRequest request) {
+        Product product = productRepository.findByIdAndBusinessId(id, businessId)
+                .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado."));
+
+        product.setName(request.getName().trim());
+        product.setCategory(request.getCategory().trim());
         product.setPrice(request.getPrice());
         product.setStock(request.getStock());
-        product.setIsActive(true);
-        product.setImageUri(request.getImageUri());
+        product.setImageUri(trimOrNull(request.getImageUri()));
 
-        return mapToResponse(productRepository.save(product));
+        return ProductResponse.fromEntity(productRepository.save(product));
     }
 
-    public ProductResponse updateProduct(Long id, ProductRequest request) {
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Producto no encontrado con id: " + id));
-
-        product.setName(request.getName());
-        product.setCategory(request.getCategory());
-        product.setPrice(request.getPrice());
-        product.setStock(request.getStock());
-
-        if (request.getImageUri() != null && !request.getImageUri().isBlank()) {
-            product.setImageUri(request.getImageUri());
-        }
-
-        return mapToResponse(productRepository.save(product));
-    }
-
-    public ProductResponse toggleProductStatus(Long id) {
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Producto no encontrado con id: " + id));
+    @Transactional
+    public ProductResponse toggleProductStatus(Long businessId, Long id) {
+        Product product = productRepository.findByIdAndBusinessId(id, businessId)
+                .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado."));
 
         product.setIsActive(!product.getIsActive());
-        return mapToResponse(productRepository.save(product));
+        return ProductResponse.fromEntity(productRepository.save(product));
     }
 
-    private ProductResponse mapToResponse(Product product) {
-        return ProductResponse.builder()
-                .id(product.getId())
-                .idNegocio(product.getBusiness().getId())
-                .name(product.getName())
-                .category(product.getCategory())
-                .price(product.getPrice())
-                .stock(product.getStock())
-                .isActive(product.getIsActive())
-                .imageUri(product.getImageUri())
-                .build();
+    private String trimOrNull(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

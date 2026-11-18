@@ -28,12 +28,16 @@ public class Sale {
     @Column(nullable = false)
     private Integer quantity;
 
+    /** Precio unitario al momento de la venta. Nullable para no romper las ventas ya guardadas. */
+    @Column(name = "unit_price")
+    private Double unitPrice;
+
     @Column(nullable = false)
     private Double total;
 
     @Column(nullable = false, length = 20)
-    private String time; // Ej: "10:15 AM"
+    private String time;
 
     @Column(nullable = false, length = 20)
-    private String date; // Ej: "11/11/2026"
+    private String date;
 }

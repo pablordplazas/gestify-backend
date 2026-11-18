@@ -3,6 +3,8 @@ package com.gestify.backend.dto.response;
 import com.gestify.backend.model.Product;
 import com.gestify.backend.model.Supplier;
 import lombok.*;
+
+import java.util.ArrayList;
 import java.util.List;
 
 @Data @Builder @AllArgsConstructor
@@ -14,6 +16,7 @@ public class SupplierResponse {
     private String phone;
     private String category;
     private List<Long> productIds;
+    private List<String> extraItems;
     private Boolean isActive;
 
     public static SupplierResponse fromEntity(Supplier s) {
@@ -25,6 +28,7 @@ public class SupplierResponse {
                 .phone(s.getPhone())
                 .category(s.getCategory())
                 .productIds(s.getProducts().stream().map(Product::getId).toList())
+                .extraItems(new ArrayList<>(s.getExtraItems()))
                 .isActive(s.getIsActive())
                 .build();
     }

@@ -25,7 +25,7 @@ public class Business {
 
     @Column(name = "tema_color", nullable = false)
     @Builder.Default
-    private String themeColor = "AZUL";
+    private String themeColor = "BLUE";
 
     @Column(name = "modo_oscuro", nullable = false)
     @Builder.Default
